@@ -111,7 +111,8 @@
     "settings_photo_removed": "Photo removed successfully",
     "settings_dicebear": "DiceBear Avatars",
     "settings_custom_photo": "Custom Photo",
-    "settings_upload_hint": "PNG, JPG or WEBP. Max 2MB."
+    "settings_upload_hint": "PNG, JPG or WEBP. Max 2MB.",
+    "search_placeholder": "Search tasks..."
   },
   "days": {
     "sun": "Sun",
@@ -128,6 +129,12 @@
     "welcome": "Hello! I am your Taskito AI coach. How can I help you stay productive today?",
     "error": "Sorry, I encountered an error. Please make sure the AI API key is configured.",
     "error_fallback": "Failed to get AI response. Please try again."
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of"
   },
   "priority": {
     "low": "Low",

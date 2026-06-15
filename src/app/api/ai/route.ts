@@ -13,9 +13,15 @@ const RequestSchema = z.object({
   })).max(50),
   context: z.array(z.object({
     title: z.string().max(200),
+    description: z.string().max(1000).optional().nullable(),
     priority: z.string(),
+    status: z.string(),
     due_date: z.string(),
   })).max(100).optional(),
+  userProfile: z.object({
+    name: z.string().max(200).optional(),
+    email: z.string().max(200).optional(),
+  }).optional(),
 })
 
 export async function POST(req: Request) {
@@ -64,7 +70,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
     }
-    const { messages, context } = parsed.data
+    const { messages, context, userProfile } = parsed.data
     const apiKey = process.env.AI_API_KEY;
 
     if (!apiKey) {
@@ -74,17 +80,23 @@ export async function POST(req: Request) {
     const systemPrompt = `You are the Taskito AI assistant, a professional productivity coach. 
     Your goal is to help users stay organized and productive.
     
+    User details:
+    - Name: ${userProfile?.name || 'Not provided'}
+    - Email: ${userProfile?.email || 'Not provided'}
+    
     Capabilities:
     1. Break down large tasks into smaller, manageable sub-tasks.
-    2. Analyze the user's current task list (provided in context) and suggest priorities.
+    2. Analyze the user's current task list (including status e.g. Todo, In Progress, Done, and descriptions) and suggest priorities.
     3. Answer productivity-related questions with actionable advice.
     
     Context about user's tasks: ${JSON.stringify(context)}
     
     Guidelines:
+    - Address the user by their name if available.
     - Be concise and direct.
     - Use bullet points for task breakdowns.
     - Be encouraging but firm about productivity.
+    - Offer specific advice depending on task statuses (e.g. if many tasks are 'In Progress', recommend focus or finishing current ones before starting new ones).
     - If the user asks to break down a task, provide a numbered list of steps.`;
 
     const openrouterMessages: { role: string; content: string }[] = [

@@ -29,7 +29,7 @@ function StatCard({ label, value, icon: Icon, color, bgColor }: StatCardProps) {
 }
 
 export default function ProgressOverview() {
-  const { t } = useTranslation();
+  const { locale, t } = useTranslation();
   const supabase = createClient();
   const [stats, setStats] = useState({
     completed: 0,
@@ -38,18 +38,36 @@ export default function ProgressOverview() {
     weeklyData: Array(7).fill(0),
   });
   const [loading, setLoading] = useState(true);
+  const [focusMinutes, setFocusMinutes] = useState(0);
+
+  useEffect(() => {
+    const loadFocusMinutes = () => {
+      const mins = localStorage.getItem("taskito_focus_minutes") || "0";
+      setFocusMinutes(parseInt(mins, 10));
+    };
+    loadFocusMinutes();
+    window.addEventListener("taskito_focus_updated", loadFocusMinutes);
+    return () => {
+      window.removeEventListener("taskito_focus_updated", loadFocusMinutes);
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchStats() {
       setLoading(true);
       try {
         const today = format(new Date(), "yyyy-MM-dd");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
         // Run both count queries in parallel
         const [completedResult, dueTodayResult, allCompletedResult] = await Promise.all([
-          supabase.from("tasks").select("*", { count: "exact", head: true }).eq("status", "Done"),
-          supabase.from("tasks").select("*", { count: "exact", head: true }).eq("due_date", today),
-          supabase.from("tasks").select("created_at").eq("status", "Done").order("created_at", { ascending: false }),
+          supabase.from("tasks").select("*", { count: "exact", head: true }).eq("status", "Done").eq("user_id", user.id),
+          supabase.from("tasks").select("*", { count: "exact", head: true }).eq("due_date", today).eq("user_id", user.id),
+          supabase.from("tasks").select("created_at").eq("status", "Done").eq("user_id", user.id).order("created_at", { ascending: false }),
         ]);
 
         const completedCount = completedResult.count || 0;
@@ -108,9 +126,11 @@ export default function ProgressOverview() {
 
   const maxWeekly = Math.max(...stats.weeklyData, 1);
 
+  const focusHours = (focusMinutes / 60).toFixed(1);
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <StatCard 
           label={t("dashboard.metrics_completed")} 
           value={stats.completed} 
@@ -131,6 +151,13 @@ export default function ProgressOverview() {
           icon={Flame} 
           color="text-orange-500" 
           bgColor="bg-orange-500/10" 
+        />
+        <StatCard 
+          label={t("dashboard.metrics_focus")} 
+          value={`${focusHours} ${locale === "ar" ? "س" : "h"}`} 
+          icon={Clock} 
+          color="text-purple-500" 
+          bgColor="bg-purple-500/10" 
         />
       </div>
 

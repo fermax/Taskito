@@ -3,6 +3,7 @@
 import UserProfile from "@/components/dashboard/UserProfile";
 import TaskManagement from "@/components/dashboard/TaskManagement";
 import ProgressOverview from "@/components/dashboard/ProgressOverview";
+import FocusTimer from "@/components/dashboard/FocusTimer";
 import { useTranslation } from "@/components/LanguageProvider";
 
 export default function DashboardPage() {
@@ -23,6 +24,7 @@ export default function DashboardPage() {
         </div>
         <div className="space-y-8">
           <ProgressOverview />
+          <FocusTimer />
         </div>
       </div>
     </div>

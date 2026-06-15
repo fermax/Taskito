@@ -15,7 +15,7 @@ export default function UserProfile() {
       const user = result.data?.user
       setUser(user);
       const url = user?.user_metadata?.avatar_url;
-      if (url && url.startsWith("/uploads/")) setAvatarUrl(url);
+      if (url && (url.startsWith("/uploads/") || url.startsWith("http"))) setAvatarUrl(url);
     });
   }, []);
 

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { writeFile } from 'fs/promises'
-import path from 'path'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
@@ -40,15 +38,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid file extension.' }, { status: 400 })
     }
 
-    const fileName = `${user.id}.${ext}`
-    const filePath = path.join(process.cwd(), 'public', 'uploads', 'avatars', fileName)
-
+    const fileName = `${user.id}/${Date.now()}.${ext}`
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    await writeFile(filePath, buffer)
 
-    const url = `/uploads/avatars/${fileName}`
-    return NextResponse.json({ url })
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return NextResponse.json({ error: 'Failed to upload image to storage' }, { status: 500 });
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+    return NextResponse.json({ url: publicUrl })
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })

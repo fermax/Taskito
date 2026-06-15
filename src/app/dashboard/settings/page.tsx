@@ -37,7 +37,7 @@ export default function SettingsPage() {
         setUser(u);
         setDisplayName(u.user_metadata?.full_name || "");
         const url = u.user_metadata?.avatar_url || "";
-        if (url && url.startsWith("/uploads/")) {
+        if (url && (url.startsWith("/uploads/") || url.startsWith("http"))) {
           setAvatarMode("custom");
           setAvatarUrl(url);
         } else {

@@ -111,7 +111,8 @@
     "settings_photo_removed": "Photo supprimée avec succès",
     "settings_dicebear": "Avatars DiceBear",
     "settings_custom_photo": "Photo personnalisée",
-    "settings_upload_hint": "PNG, JPG ou WEBP. Max 2 Mo."
+    "settings_upload_hint": "PNG, JPG ou WEBP. Max 2 Mo.",
+    "search_placeholder": "Rechercher des tâches..."
   },
   "days": {
     "sun": "Dim",
@@ -128,6 +129,12 @@
     "welcome": "Bonjour ! Je suis votre coach IA Taskito. Comment puis-je vous aider à être productif aujourd'hui ?",
     "error": "Désolé, une erreur s'est produite. Veuillez vérifier que la clé API IA est configurée.",
     "error_fallback": "Échec de la réponse IA. Veuillez réessayer."
+  },
+  "pagination": {
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page": "Page",
+    "of": "sur"
   },
   "priority": {
     "low": "Basse",

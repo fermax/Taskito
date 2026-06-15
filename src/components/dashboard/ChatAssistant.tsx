@@ -149,10 +149,13 @@ export default function ChatAssistant() {
     setIsLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const { data: tasks } = await supabase.from("tasks").select("*");
       const safeContext = (tasks || []).map((t: any) => ({
         title: t.title,
+        description: t.description || "",
         priority: t.priority,
+        status: t.status,
         due_date: t.due_date,
       }));
 
@@ -162,6 +165,10 @@ export default function ChatAssistant() {
         body: JSON.stringify({
           messages: messages.map(m => ({ role: m.role, content: m.content })),
           context: safeContext,
+          userProfile: {
+            name: user?.user_metadata?.full_name || "",
+            email: user?.email || "",
+          }
         }),
       });
 

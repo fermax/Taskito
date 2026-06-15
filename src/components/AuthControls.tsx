@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/components/LanguageProvider";
 
 export default function AuthControls() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { locale, setLocale } = useTranslation();
+  const isDark = resolvedTheme === "dark";
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -34,12 +35,12 @@ export default function AuthControls() {
       {mounted && (
         <Button
           variant="outline"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="w-9 h-9"
-          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          className="relative w-9 h-9 flex items-center justify-center"
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" aria-hidden={theme === "dark"} />
-          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" aria-hidden={theme === "light"} />
+          <Sun className={`h-5 w-5 transition-all duration-300 ${isDark ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"}`} aria-hidden={isDark} />
+          <Moon className={`absolute h-5 w-5 transition-all duration-300 ${isDark ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0"}`} aria-hidden={!isDark} />
         </Button>
       )}
     </div>

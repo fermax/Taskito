@@ -111,7 +111,8 @@
     "settings_photo_removed": "تم إزالة الصورة بنجاح",
     "settings_dicebear": "صور DiceBear",
     "settings_custom_photo": "صورة مخصصة",
-    "settings_upload_hint": "PNG, JPG أو WEBP. الحد الأقصى 2 ميغابايت."
+    "settings_upload_hint": "PNG, JPG أو WEBP. الحد الأقصى 2 ميغابايت.",
+    "search_placeholder": "ابحث عن مهمة..."
   },
   "days": {
     "sun": "الأحد",
@@ -128,6 +129,12 @@
     "welcome": "مرحباً! أنا مدرب Taskito الذكي. كيف يمكنني مساعدتك لتكون أكثر إنتاجية اليوم؟",
     "error": "عذراً، حدث خطأ. يرجى التأكد من تكوين مفتاح API للذكاء الاصطناعي.",
     "error_fallback": "فشل في الحصول على رد AI. حاول مرة أخرى."
+  },
+  "pagination": {
+    "previous": "السابق",
+    "next": "التالي",
+    "page": "الصفحة",
+    "of": "من"
   },
   "priority": {
     "low": "منخفضة",

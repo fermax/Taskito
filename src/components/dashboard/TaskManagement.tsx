@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { CheckCircle2, Circle, Plus, Trash2, Edit3, Filter, X, Calendar } from "lucide-react";
+import { CheckCircle2, Circle, Plus, Trash2, Edit3, Filter, X, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import TaskForm from "./TaskForm";
 import { useTranslation } from "@/components/LanguageProvider";
 import Tooltip from "@/components/ui/tooltip";
@@ -22,7 +22,7 @@ interface Task {
 }
 
 export default function TaskManagement() {
-  const { t } = useTranslation();
+  const { locale, t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -30,6 +30,9 @@ export default function TaskManagement() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterPriority, setFilterPriority] = useState("All");
   const [filterToday, setFilterToday] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
@@ -60,9 +63,15 @@ export default function TaskManagement() {
 
   async function fetchTasks() {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -103,7 +112,13 @@ export default function TaskManagement() {
 
   async function confirmDelete() {
     if (!deleteTarget) return;
-    const { error } = await supabase.from("tasks").delete().eq("id", deleteTarget);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from("tasks")
+      .delete()
+      .eq("id", deleteTarget)
+      .eq("user_id", user.id);
     if (error) {
       toast.error(t("dashboard.task_delete_error"));
     } else {
@@ -115,10 +130,13 @@ export default function TaskManagement() {
 
   async function handleToggleStatus(id: string, currentStatus: string) {
     const newStatus = currentStatus === "Done" ? "Todo" : "Done";
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { error } = await supabase
       .from("tasks")
       .update({ status: newStatus })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (error) {
       toast.error(t("dashboard.task_status_error"));
@@ -131,8 +149,20 @@ export default function TaskManagement() {
     const statusMatch = filterStatus === "All" || task.status === filterStatus;
     const priorityMatch = filterPriority === "All" || task.priority === filterPriority;
     const todayMatch = !filterToday || task.due_date === new Date().toISOString().split("T")[0];
-    return statusMatch && priorityMatch && todayMatch;
+    const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (task.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+    return statusMatch && priorityMatch && todayMatch && searchMatch;
   });
+
+  const totalPages = Math.ceil(filteredTasks.length / ITEMS_PER_PAGE);
+  const paginatedTasks = filteredTasks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, filterPriority, filterToday, searchTerm, tasks.length]);
 
   if (loading) return <div className="p-6 text-center text-muted-foreground">{t("dashboard.loading_tasks")}</div>;
 
@@ -145,6 +175,13 @@ export default function TaskManagement() {
             <Filter className="w-4 h-4" />
             {t("dashboard.filters")}
           </div>
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={t("dashboard.search_placeholder")}
+            className="w-[160px] h-9 text-sm"
+            aria-label="Search tasks"
+          />
           <Select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -244,7 +281,7 @@ export default function TaskManagement() {
             {t("dashboard.no_tasks")}
           </div>
         ) : (
-          filteredTasks.map((task) => (
+          paginatedTasks.map((task) => (
             <div
               key={task.id}
               className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-accent/50 transition-all group"
@@ -304,6 +341,32 @@ export default function TaskManagement() {
           ))
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 pt-2">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="gap-1 h-9 text-xs"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            {t("pagination.previous")}
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {t("pagination.page")} {currentPage} {t("pagination.of")} {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="gap-1 h-9 text-xs"
+          >
+            {t("pagination.next")}
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
