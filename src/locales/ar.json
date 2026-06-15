@@ -43,7 +43,8 @@
     "show_password": "إظهار كلمة المرور",
     "hide_password": "إخفاء كلمة المرور",
     "check_email": "تحقق من بريدك الإلكتروني للحصول على رابط التأكيد!",
-    "confirm_password": "تأكيد كلمة المرور"
+    "confirm_password": "تأكيد كلمة المرور",
+    "remember_me": "تذكرني"
   },
   "dashboard": {
     "title": "لوحة التحكم",

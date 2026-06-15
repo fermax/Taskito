@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +17,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("taskito_remembered_email");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -41,6 +50,11 @@ export default function LoginPage() {
     if (error) {
       toast.error(error.message, { position: "top-center" });
     } else {
+      if (rememberMe) {
+        localStorage.setItem("taskito_remembered_email", email);
+      } else {
+        localStorage.removeItem("taskito_remembered_email");
+      }
       toast.success(t("common.welcome_back"));
       router.push("/dashboard");
     }
@@ -94,7 +108,16 @@ export default function LoginPage() {
               </button>
             </div>
             {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer accent-primary"
+                />
+                <span>{t("auth.remember_me")}</span>
+              </label>
               <Link href="/reset-password" className="text-sm text-primary hover:underline">
                 {t("auth.forgot_password")}
               </Link>

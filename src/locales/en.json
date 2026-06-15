@@ -43,7 +43,8 @@
     "show_password": "Show password",
     "hide_password": "Hide password",
     "check_email": "Check your email for the confirmation link!",
-    "confirm_password": "Confirm Password"
+    "confirm_password": "Confirm Password",
+    "remember_me": "Remember me"
   },
   "dashboard": {
     "title": "Dashboard",

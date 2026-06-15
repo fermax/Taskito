@@ -43,7 +43,8 @@
     "show_password": "Afficher le mot de passe",
     "hide_password": "Masquer le mot de passe",
     "check_email": "Vérifiez vos emails pour le lien de confirmation !",
-    "confirm_password": "Confirmer le mot de passe"
+    "confirm_password": "Confirmer le mot de passe",
+    "remember_me": "Se souvenir de moi"
   },
   "dashboard": {
     "title": "Tableau de bord",
