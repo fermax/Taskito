@@ -28,6 +28,8 @@ export async function middleware(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname
+  const rememberMe = request.cookies.get('taskito_remember_me')?.value === 'true'
+
   const isAuthRoute = pathname === '/login' || pathname === '/signup' || pathname === '/reset-password'
   if (isAuthRoute) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anonymous'
@@ -45,10 +47,15 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
+          const cookieOptions = { ...options }
+          if (!rememberMe) {
+            delete cookieOptions.maxAge
+            delete cookieOptions.expires
+          }
           request.cookies.set({
             name,
             value,
-            ...options,
+            ...cookieOptions,
           })
           response = NextResponse.next({
             request: {
@@ -58,7 +65,7 @@ export async function middleware(request: NextRequest) {
           response.cookies.set({
             name,
             value,
-            ...options,
+            ...cookieOptions,
           })
         },
         remove(name: string, options: CookieOptions) {
@@ -88,8 +95,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (user) {
+    if (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    if (request.nextUrl.pathname === '/' && rememberMe) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   return response

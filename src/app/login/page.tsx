@@ -52,8 +52,10 @@ export default function LoginPage() {
     } else {
       if (rememberMe) {
         localStorage.setItem("taskito_remembered_email", email);
+        document.cookie = "taskito_remember_me=true; path=/; max-age=2592000; SameSite=Lax; Secure";
       } else {
         localStorage.removeItem("taskito_remembered_email");
+        document.cookie = "taskito_remember_me=; path=/; max-age=0; SameSite=Lax; Secure";
       }
       toast.success(t("common.welcome_back"));
       router.push("/dashboard");

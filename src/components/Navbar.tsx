@@ -22,6 +22,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    document.cookie = "taskito_remember_me=; path=/; max-age=0; SameSite=Lax; Secure";
     router.push("/login");
   };
 
