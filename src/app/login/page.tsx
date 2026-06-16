@@ -43,19 +43,25 @@ export default function LoginPage() {
     if (!validate()) return;
 
     setLoading(true);
+
+    if (rememberMe) {
+      document.cookie = "taskito_remember_me=true; path=/; max-age=2592000; SameSite=Lax; Secure";
+    } else {
+      document.cookie = "taskito_remember_me=; path=/; max-age=0; SameSite=Lax; Secure";
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) {
       toast.error(error.message, { position: "top-center" });
+      document.cookie = "taskito_remember_me=; path=/; max-age=0; SameSite=Lax; Secure";
     } else {
       if (rememberMe) {
         localStorage.setItem("taskito_remembered_email", email);
-        document.cookie = "taskito_remember_me=true; path=/; max-age=2592000; SameSite=Lax; Secure";
       } else {
         localStorage.removeItem("taskito_remembered_email");
-        document.cookie = "taskito_remember_me=; path=/; max-age=0; SameSite=Lax; Secure";
       }
       toast.success(t("common.welcome_back"));
       router.push("/dashboard");

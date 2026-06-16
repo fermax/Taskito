@@ -10,12 +10,6 @@ export const createClient = () => {
     return {} as any;
   }
 
-  // Detect if rememberMe is enabled
-  let rememberMe = false;
-  if (typeof window !== 'undefined') {
-    rememberMe = document.cookie.split('; ').some(row => row.trim().startsWith('taskito_remember_me=true'));
-  }
-
   return createBrowserClient(url, key!, {
     cookies: {
       get(name: string) {
@@ -28,7 +22,8 @@ export const createClient = () => {
       set(name: string, value: string, options: any) {
         if (typeof window === 'undefined') return;
         const cookieOptions = { ...options };
-        if (!rememberMe) {
+        const isRememberMe = document.cookie.split('; ').some(row => row.trim().startsWith('taskito_remember_me=true'));
+        if (!isRememberMe) {
           delete cookieOptions.maxAge;
           delete cookieOptions.expires;
         }
