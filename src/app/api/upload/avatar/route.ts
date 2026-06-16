@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       });
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError);
+      console.error('Storage upload error:', uploadError.message);
       return NextResponse.json({ error: 'Failed to upload image to storage' }, { status: 500 });
     }
 

@@ -150,7 +150,7 @@ export default function ChatAssistant() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: tasks } = await supabase.from("tasks").select("*");
+      const { data: tasks } = await supabase.from("tasks").select("*").eq("user_id", user?.id);
       const safeContext = (tasks || []).map((t: any) => ({
         title: t.title,
         description: t.description || "",

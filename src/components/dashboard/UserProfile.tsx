@@ -15,7 +15,8 @@ export default function UserProfile() {
       const user = result.data?.user
       setUser(user);
       const url = user?.user_metadata?.avatar_url;
-      if (url && (url.startsWith("/uploads/") || url.startsWith("http"))) setAvatarUrl(url);
+      const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      if (url && (url.startsWith("/uploads/") || url.startsWith(supabaseHost) || url.startsWith("https://api.dicebear.com"))) setAvatarUrl(url);
     });
   }, []);
 

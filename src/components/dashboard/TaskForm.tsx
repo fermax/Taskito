@@ -1,11 +1,19 @@
-"use client"
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { useTranslation } from "@/components/LanguageProvider";
+import { z } from "zod";
+import { toast } from "sonner";
+
+const TaskSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200, "Title too long"),
+  description: z.string().max(1000, "Description too long").default(""),
+  priority: z.enum(["Low", "Medium", "High"]),
+  status: z.enum(["Todo", "In Progress", "Done"]),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+});
 
 interface Task {
   id?: string;
@@ -34,7 +42,13 @@ export default function TaskForm({ initialData, onSubmit, onCancel }: TaskFormPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(task);
+    const result = TaskSchema.safeParse(task);
+    if (!result.success) {
+      const firstError = result.error.issues[0]?.message || "Invalid input";
+      toast.error(firstError);
+      return;
+    }
+    onSubmit(result.data as Task);
   };
 
   return (

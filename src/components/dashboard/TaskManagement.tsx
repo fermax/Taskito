@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { CheckCircle2, Circle, Plus, Trash2, Edit3, Filter, X, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle2, Circle, Plus, Trash2, Edit3, Filter, X, Calendar, ChevronLeft, ChevronRight, Archive, ArchiveRestore } from "lucide-react";
 import TaskForm from "./TaskForm";
 import { useTranslation } from "@/components/LanguageProvider";
 import Tooltip from "@/components/ui/tooltip";
@@ -19,6 +19,7 @@ interface Task {
   status: "Todo" | "In Progress" | "Done";
   due_date: string;
   user_id: string;
+  archived?: boolean;
 }
 
 export default function TaskManagement() {
@@ -34,6 +35,7 @@ export default function TaskManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
 
@@ -84,21 +86,24 @@ export default function TaskManagement() {
   }
 
   async function handleCreateOrUpdate(taskData: any) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     if (editingTask) {
       const { error } = await supabase
         .from("tasks")
         .update(taskData)
-        .eq("id", editingTask.id);
+        .eq("id", editingTask.id)
+        .eq("user_id", user.id);
       if (error) {
         toast.error(t("dashboard.task_update_error"));
         return;
       }
       toast.success(t("dashboard.task_update_success"));
     } else {
-      const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("tasks")
-        .insert([{ ...taskData, user_id: user?.id }]);
+        .insert([{ ...taskData, user_id: user.id }]);
       if (error) {
         toast.error(t("dashboard.task_create_error"));
         return;
@@ -145,13 +150,55 @@ export default function TaskManagement() {
     }
   }
 
+  async function handleArchiveTask(id: string, currentArchived: boolean) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from("tasks")
+      .update({ archived: !currentArchived })
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast.error(t("dashboard.archive_error"));
+    } else {
+      toast.success(currentArchived ? t("dashboard.unarchive_success") : t("dashboard.archive_success"));
+      fetchTasks();
+    }
+  }
+
+  async function handleArchiveAllDone() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const doneTasks = tasks.filter(t => t.status === "Done" && !t.archived);
+    if (doneTasks.length === 0) return;
+
+    const { error } = await supabase
+      .from("tasks")
+      .update({ archived: true })
+      .eq("status", "Done")
+      .eq("user_id", user.id)
+      .eq("archived", false);
+
+    if (error) {
+      toast.error(t("dashboard.archive_error"));
+    } else {
+      toast.success(t("dashboard.archive_all_success"));
+      fetchTasks();
+    }
+  }
+
+  const archivedCount = tasks.filter(t => t.archived).length;
+  const doneCount = tasks.filter(t => t.status === "Done" && !t.archived).length;
+
   const filteredTasks = tasks.filter((task) => {
+    const archiveMatch = showArchived ? task.archived : !task.archived;
     const statusMatch = filterStatus === "All" || task.status === filterStatus;
     const priorityMatch = filterPriority === "All" || task.priority === filterPriority;
     const todayMatch = !filterToday || task.due_date === new Date().toISOString().split("T")[0];
     const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         (task.description || "").toLowerCase().includes(searchTerm.toLowerCase());
-    return statusMatch && priorityMatch && todayMatch && searchMatch;
+    return archiveMatch && statusMatch && priorityMatch && todayMatch && searchMatch;
   });
 
   const totalPages = Math.ceil(filteredTasks.length / ITEMS_PER_PAGE);
@@ -162,61 +209,104 @@ export default function TaskManagement() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterStatus, filterPriority, filterToday, searchTerm, tasks.length]);
+  }, [filterStatus, filterPriority, filterToday, searchTerm, showArchived, tasks.length]);
 
   if (loading) return <div className="p-6 text-center text-muted-foreground">{t("dashboard.loading_tasks")}</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h3 className="font-semibold text-lg">{t("dashboard.tasks")}</h3>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mr-2">
-            <Filter className="w-4 h-4" />
-            {t("dashboard.filters")}
-          </div>
-          <Input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t("dashboard.search_placeholder")}
-            className="w-[160px] h-9 text-sm"
-            aria-label="Search tasks"
-          />
-          <Select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-[120px]"
-            aria-label="Filter by status"
-          >
-            <option value="All">{t("dashboard.all_status")}</option>
-            <option value="Todo">{t("status.todo")}</option>
-            <option value="In Progress">{t("status.in_progress")}</option>
-            <option value="Done">{t("status.done")}</option>
-          </Select>
-          <Select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="w-[120px]"
-            aria-label="Filter by priority"
-          >
-            <option value="All">{t("dashboard.all_priority")}</option>
-            <option value="Low">{t("priority.low")}</option>
-            <option value="Medium">{t("priority.medium")}</option>
-            <option value="High">{t("priority.high")}</option>
-          </Select>
+        <div className="flex items-center gap-3">
+          <h3 className="font-semibold text-lg">{showArchived ? t("dashboard.archived_tasks") : t("dashboard.tasks")}</h3>
           <Button
-            variant={filterToday ? "default" : "outline"}
-            onClick={() => setFilterToday(!filterToday)}
-            className="gap-1 text-xs h-9"
-            aria-label={filterToday ? "Show all tasks" : "Show today's tasks"}
+            variant={showArchived ? "default" : "outline"}
+            onClick={() => setShowArchived(!showArchived)}
+            className="gap-1.5 text-xs h-8 relative"
+            aria-label={showArchived ? t("dashboard.show_active") : t("dashboard.show_archived")}
           >
-            <Calendar className="w-3.5 h-3.5" />
-            {t("dashboard.today")}
+            <Archive className="w-3.5 h-3.5" />
+            {showArchived ? t("dashboard.show_active") : t("dashboard.archived")}
+            {archivedCount > 0 && !showArchived && (
+              <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {archivedCount}
+              </span>
+            )}
           </Button>
-          <Button onClick={() => { setEditingTask(undefined); setShowForm(true); }} className="gap-2" aria-label="Add new task">
-            <Plus className="w-4 h-4" />
-            {t("dashboard.add_task")}
-          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!showArchived && (
+            <>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mr-2">
+                <Filter className="w-4 h-4" />
+                {t("dashboard.filters")}
+              </div>
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={t("dashboard.search_placeholder")}
+                className="w-[160px] h-9 text-sm"
+                aria-label="Search tasks"
+              />
+              <Select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-[120px]"
+                aria-label="Filter by status"
+              >
+                <option value="All">{t("dashboard.all_status")}</option>
+                <option value="Todo">{t("status.todo")}</option>
+                <option value="In Progress">{t("status.in_progress")}</option>
+                <option value="Done">{t("status.done")}</option>
+              </Select>
+              <Select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="w-[120px]"
+                aria-label="Filter by priority"
+              >
+                <option value="All">{t("dashboard.all_priority")}</option>
+                <option value="Low">{t("priority.low")}</option>
+                <option value="Medium">{t("priority.medium")}</option>
+                <option value="High">{t("priority.high")}</option>
+              </Select>
+              <Button
+                variant={filterToday ? "default" : "outline"}
+                onClick={() => setFilterToday(!filterToday)}
+                className="gap-1 text-xs h-9"
+                aria-label={filterToday ? "Show all tasks" : "Show today's tasks"}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                {t("dashboard.today")}
+              </Button>
+            </>
+          )}
+          {showArchived ? (
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={t("dashboard.search_placeholder")}
+              className="w-[160px] h-9 text-sm"
+              aria-label="Search archived tasks"
+            />
+          ) : (
+            <>
+              {doneCount > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={handleArchiveAllDone}
+                  className="gap-1.5 text-xs h-9"
+                  aria-label={t("dashboard.archive_all_done")}
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                  {t("dashboard.archive_all_done")}
+                </Button>
+              )}
+              <Button onClick={() => { setEditingTask(undefined); setShowForm(true); }} className="gap-2" aria-label="Add new task">
+                <Plus className="w-4 h-4" />
+                {t("dashboard.add_task")}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -320,14 +410,37 @@ export default function TaskManagement() {
                 </div>
               </div>
               <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity focus-within:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-                <Button
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  onClick={() => { setEditingTask(task); setShowForm(true); }}
-                  aria-label={`Edit task: ${task.title}`}
-                >
-                  <Edit3 className="w-4 h-4" />
-                </Button>
+                {task.archived ? (
+                  <Button
+                    variant="ghost"
+                    className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600"
+                    onClick={() => handleArchiveTask(task.id, true)}
+                    aria-label={`${t("dashboard.unarchive")}: ${task.title}`}
+                  >
+                    <ArchiveRestore className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <>
+                    {task.status === "Done" && (
+                      <Button
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-amber-500 hover:text-amber-600"
+                        onClick={() => handleArchiveTask(task.id, false)}
+                        aria-label={`${t("dashboard.archive")}: ${task.title}`}
+                      >
+                        <Archive className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      onClick={() => { setEditingTask(task); setShowForm(true); }}
+                      aria-label={`Edit task: ${task.title}`}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
                 <Button
                   variant="ghost"
                   className="h-8 w-8 p-0 text-destructive hover:text-destructive"

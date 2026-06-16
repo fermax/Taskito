@@ -26,7 +26,9 @@ export default function SignupPage() {
   const validate = () => {
     const newErrors: typeof errors = {};
     if (!email.includes("@")) newErrors.email = t("auth.invalid_email");
-    if (password.length < 6) newErrors.password = t("auth.password_min");
+    if (password.length < 8) newErrors.password = t("auth.password_min");
+    else if (!/[A-Z]/.test(password)) newErrors.password = t("auth.password_uppercase");
+    else if (!/[0-9]/.test(password)) newErrors.password = t("auth.password_number");
     if (password !== confirmPassword) newErrors.confirm = t("auth.passwords_mismatch");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

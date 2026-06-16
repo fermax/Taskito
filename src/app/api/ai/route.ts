@@ -80,9 +80,7 @@ export async function POST(req: Request) {
     const systemPrompt = `You are the Taskito AI assistant, a professional productivity coach. 
     Your goal is to help users stay organized and productive.
     
-    User details:
-    - Name: ${userProfile?.name || 'Not provided'}
-    - Email: ${userProfile?.email || 'Not provided'}
+    User name: ${userProfile?.name || 'User'}
     
     Capabilities:
     1. Break down large tasks into smaller, manageable sub-tasks.
@@ -126,7 +124,7 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       const text = await response.text();
-      console.error('OpenRouter error:', response.status, text);
+      console.error('OpenRouter error:', response.status);
       return NextResponse.json({ error: 'AI service temporarily unavailable' }, { status: 502 });
     }
 
@@ -146,7 +144,7 @@ export async function POST(req: Request) {
       }
     )
   } catch (error) {
-    console.error('AI API Error:', error);
+    console.error('AI API Error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

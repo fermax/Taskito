@@ -32,7 +32,7 @@ export default function UpdatePasswordPage() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       setError(t("auth.password_min"));
       return;
     }
